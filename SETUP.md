@@ -68,3 +68,24 @@ Set `python.defaultInterpreterPath` in `.vscode/settings.json` to that path, the
 ```bash
 python -m ipykernel install --user --name schubness-cs6850 --display-name "Python (schubness-cs6850)"
 ```
+
+## 6. Data
+
+Download the dataset archives from [Zenodo record 4597151](https://zenodo.org/records/4597151) into `Scripts/python/data/`, then unzip them there. Unzipping creates the directories the notebooks read.
+
+```bash
+cd Scripts/python/data
+unzip Duo_datasets.zip
+unzip Freytag_Sun_datasets.zip
+unzip Krzak_datasets.zip
+unzip Cytotrace_datasets.zip
+unzip TI_datasets.zip
+```
+
+| Archive | Directory |
+|---|---|
+| `Duo_datasets.zip` | `Scripts/python/data/DuoClustering2018/` |
+| `Freytag_Sun_datasets.zip` | `Scripts/python/data/Freytag_datasets/` |
+| `Krzak_datasets.zip` | `Scripts/python/data/benchmark_sensitivity_frontiers/` |
+| `Cytotrace_datasets.zip` | `Scripts/python/data/Cytotrace_datasets/` |
+| `TI_datasets.zip` | `Scripts/python/data/TI/` |
