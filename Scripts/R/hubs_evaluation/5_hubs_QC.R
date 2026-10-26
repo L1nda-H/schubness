@@ -43,7 +43,7 @@ QC_computation <- function(data, k, score, n_val, thd, entropy, n_dims=50) {
   seurat$Hub_status <- factor(seurat$Hub_status,
                               levels=c("Antihub","Normal","Hub"))
   seurat$Hubness_score <- score
-  seurat <- NormalizeData(sseurat)
+  seurat <- NormalizeData(seurat)
   seurat <- ScaleData(seurat)
   seurat <- FindVariableFeatures(seurat)
   seurat <- RunPCA(seurat, verbose=F)

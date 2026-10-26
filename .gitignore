@@ -1,6 +1,5 @@
 *.DS_Store
 *.pdf
-*.txt
 *.mtx
 *.pickle
 *.rds
@@ -20,3 +19,4 @@
 *.RDataTmp
 .ipynb_checkpoints
 .Rproj.user
+.vscode/settings.json
