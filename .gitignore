@@ -21,3 +21,6 @@
 .Rproj.user
 .vscode/settings.json
 data/
+__pycache__/
+*.py[cod]
+Scripts/python/results

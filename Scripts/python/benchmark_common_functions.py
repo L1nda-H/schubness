@@ -228,12 +228,12 @@ def getNclusters2(
                 this_clusters = adata.obs["louvain"].nunique()
 
             elif flavor == "base":
-                louvain.set_rng_seed(seed)
                 part_louvain = louvain.find_partition(
                     graph=G,
                     partition_type=louvain.RBConfigurationVertexPartition,
                     weights=weights,
                     resolution_parameter=this_resolution,
+                    seed=seed,
                 )
                 clus = np.array(part_louvain.membership)
                 this_clusters = len(np.unique(clus))
@@ -645,12 +645,12 @@ def clustering_analysis(
     start = time.time()
 
     # base
-    louvain.set_rng_seed(seed)
     part_louvain = louvain.find_partition(
         graph=G,
         partition_type=louvain.RBConfigurationVertexPartition,
         weights=weights,
         resolution_parameter=1.0,
+        seed=seed,
     )
     res_key["clus"]["base_default"]["louvain"] = np.array(part_louvain.membership)
     res_key["clus_info"]["base_default"]["louvain"] = dict(
@@ -783,7 +783,7 @@ def clustering_analysis(
             hub_G,
             hub_weights,
             hub_scores,
-        ) = generate_clustering_inputs(
+        ) = generate_clustering_inputs2(
             X,
             metric=metric,
             n_neighbors=n_neighbors,
@@ -805,12 +805,12 @@ def clustering_analysis(
         )
 
         # cluster with default params
-        louvain.set_rng_seed(seed)
         part_louvain = louvain.find_partition(
             graph=hub_G,
             partition_type=louvain.RBConfigurationVertexPartition,
             weights=hub_weights,
             resolution_parameter=1.0,
+            seed=seed,
         )
         res_key["clus"][method_name + "_default"]["louvain"] = np.array(
             part_louvain.membership

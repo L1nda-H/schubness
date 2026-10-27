@@ -1,6 +1,11 @@
 from itertools import product
 import os
+import sys
+from pathlib import Path
 from natsort import natsorted
+
+_PYTHON_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_PYTHON_DIR))
 import pandas as pd
 import anndata2ri
 import anndata
@@ -14,7 +19,7 @@ import time
 import warnings
 from tqdm import tqdm
 import csv
-from benchmark_common_functions import getNclusters, generate_clustering_inputs, recipe_duo, recipe_seurat, load_h5ad, load_rds
+from benchmark_common_functions import getNclusters, generate_clustering_inputs, recipe_duo, recipe_seurat, load_rds
 warnings.filterwarnings("ignore")
 
 anndata2ri.activate()
@@ -220,7 +225,9 @@ def ti_analysis(adata, true_labels, do_norm, norm_scale, do_log, do_pca,
 
 
 ##### USAGE ######
-resdir = "/path/to/results/"
+path_data = str(_PYTHON_DIR / "data" / "TI") + os.sep
+resdir = str(_PYTHON_DIR / "results" / "TI") + os.sep
+os.makedirs(resdir, exist_ok=True)
 get_res_path = lambda fname: f'{resdir}{fname}_norm{do_norm}_scale{norm_scale}_ncomps{n_comps}_{metric}_{clustering_algo}'
 
 # fixed params
@@ -231,8 +238,7 @@ norm_scale = True
 seed = 0
 n_iter = 10
 bootstrap_size = 0.95
-fnames = ['dataset1', 'dataset2', ...]
-# fnames list of datasets
+fnames = sorted(p.stem for p in Path(path_data).glob("*.rds"))
 
 
 # varying params
@@ -242,17 +248,13 @@ do_norm = ('duo', 'seurat')
 clustering_algo = ('louvain', 'leiden')
 params_list = list(product(metric, n_comps, do_norm, clustering_algo))
 
-path_data = "/path/to/data/"
 for metric, n_comps, do_norm, clustering_algo in params_list:
     print(metric, n_comps, do_norm, clustering_algo)
     for fname in fnames:
         if np.array([get_res_path(fname).split('/')[-1] in elt for elt in os.listdir(resdir)]).any():  # dataset already computed for these settings
             continue
         print('\t\t'+fname)
-        # if data is RDS
         adata = load_rds(path_data, fname)
-        # if data is h5ad
-        adata = load_h5ad(path_data, fname)
 
         ti_analysis(
             adata,
