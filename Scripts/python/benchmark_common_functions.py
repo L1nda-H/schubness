@@ -468,6 +468,8 @@ def recipe_seurat(adata, do_log, norm_scale):
 
 def recipe_zheng17(adata, do_log, norm_scale, n_top_genes=1000):
     # same as sc.pp.recipe_zheng17 except initial cells/genes prefiltering
+    # Remove unexpressed genes to prevent pandas' "Bin edges must be unique" error.
+    sc.pp.filter_genes(adata, min_cells=1)
     sc.pp.normalize_total(adata, key_added="n_counts_all")
     filter_result = sc.pp.filter_genes_dispersion(
         adata.X,
