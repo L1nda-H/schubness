@@ -41,14 +41,34 @@ pip install --no-deps umap-learn==0.5.1 pynndescent==0.5.8 scikit-hubness==0.21.
 
 ## 3. Install R packages
 
+From the repository root:
+
 ```bash
 Rscript -e 'install.packages(
   c("RANN", "Seurat", "tidyverse", "dplyr", "assertthat", "testthat",
-    "glue", "BBmisc", "Xmisc", "rstatix", "knn.covertree", "remotes"),
+    "glue", "BBmisc", "Xmisc", "rstatix", "knn.covertree", "remotes", "BiocManager"),
   repos = "https://cloud.r-project.org"
 )'
 Rscript -e 'remotes::install_github("dynverse/dyno")'
 Rscript -e 'remotes::install_github("mojaveazure/seurat-disk")'
+
+makevars=$(mktemp)
+printf '%s\n' 'CFLAGS += -std=gnu11 -Wno-error=incompatible-pointer-types' > "$makevars"
+export R_MAKEVARS_USER="$makevars"
+Rscript -e 'install.packages(
+  c(
+    "https://cran.r-project.org/src/contrib/Archive/dbplyr/dbplyr_2.3.4.tar.gz",
+    "https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz",
+    "https://cran.r-project.org/src/contrib/Archive/MASS/MASS_7.3-60.0.1.tar.gz"
+  ),
+  repos = NULL,
+  type = "source"
+)'
+Rscript -e 'BiocManager::install(
+  c("DuoClustering2018", "SingleCellExperiment", "splatter"),
+  ask = FALSE,
+  update = FALSE
+)'
 ```
 
 ## 4. Install scEntropy
@@ -89,3 +109,23 @@ unzip TI_datasets.zip
 | `Krzak_datasets.zip` | `Scripts/python/data/benchmark_sensitivity_frontiers/` |
 | `Cytotrace_datasets.zip` | `Scripts/python/data/Cytotrace_datasets/` |
 | `TI_datasets.zip` | `Scripts/python/data/TI/` |
+
+From the repository root, download the HVG10 RDS files into `Scripts/python/data/DuoClustering2018/sce_filteredHVG10/`:
+
+```bash
+Rscript -e '
+outdir <- "Scripts/python/data/DuoClustering2018/sce_filteredHVG10"
+dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
+datasets <- c(
+  "Koh", "KohTCC", "Kumar", "KumarTCC",
+  "SimKumar4easy", "SimKumar4hard", "SimKumar8hard",
+  "Trapnell", "TrapnellTCC",
+  "Zhengmix4eq", "Zhengmix4uneq", "Zhengmix8eq"
+)
+for (name in datasets) {
+  fn <- get(paste0("sce_filteredHVG10_", name), envir = asNamespace("DuoClustering2018"))
+  sce <- fn()
+  saveRDS(sce, file.path(outdir, paste0("sce_filteredHVG10_", name, ".rds")))
+}
+'
+```
