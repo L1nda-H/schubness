@@ -68,3 +68,61 @@ From the repository root, with the `schubness-cs6850` environment active:
 ```bash
 python -m unittest discover -s tests -p 'test_*.py'
 ```
+
+## Next steps: per-swap analysis, simulations and figures
+
+These scripts build on the files `run_h5ad_gamma_experiment.py` writes for
+each dataset (`pca_input.npz`, `candidate_pool.npz`, `edge_events.csv`).
+
+| Script | Purpose |
+|---|---|
+| `Scripts/R/export_duo_hvg10.R` | Exports the ExperimentHub HVG10 RDS files (EH1502-EH1546) to MatrixMarket using base R and `Matrix` only, without SingleCellExperiment |
+| `Scripts/python/Clustering/mtx_to_h5ad.py` | Converts that export into `data/sce_filteredHVG10_<name>_gpu.h5ad` |
+| `Scripts/python/Clustering/gamma_swaps.py` | One annotated row per swap `i: j -> l`, plus fragility, purity-trajectory, edge-flow and population-profile tables |
+| `Scripts/python/Clustering/gamma_leiden.py` | Fixed-K Leiden (resolution bisected to the true K) and per-population F1 |
+| `Scripts/python/Clustering/run_gamma_next_steps.py` | Runs all of the above on every dataset |
+| `Scripts/python/Clustering/gamma_simulations.py` | Controlled 50-D Gaussian simulations (size x density factorial; density-gradient population) |
+| `Scripts/python/Clustering/gamma_umap_cpu.py` | CPU UMAP of each D_gamma kNN graph (replaces the CUDA-only module) |
+| `Scripts/python/Clustering/make_gamma_figures.py` | All figures in `results/gamma_next_steps/figures` |
+
+Full reproduction, from the repository root:
+
+```bash
+for id in 1502 1506 1510 1514 1518 1522 1526 1530 1534 1538 1542 1546; do
+  curl -L -o rds/EH$id.rds https://experimenthub.bioconductor.org/fetch/$id
+done
+Rscript Scripts/R/export_duo_hvg10.R rds export
+python Scripts/python/Clustering/mtx_to_h5ad.py export data
+python Scripts/python/Clustering/run_h5ad_gamma_experiment.py \
+  --data-dir data --out-dir results/gamma_next_steps/experiment
+python Scripts/python/Clustering/run_gamma_next_steps.py \
+  results/gamma_next_steps/experiment results/gamma_next_steps/real
+python Scripts/python/Clustering/gamma_simulations.py results/gamma_next_steps/simulations
+python Scripts/python/Clustering/gamma_simulations.py results/gamma_next_steps/simulations_imbalance \
+  --scenarios imbalance --replicates 20 --jobs 7
+python Scripts/python/Clustering/gamma_umap_cpu.py results/gamma_next_steps/experiment \
+  results/gamma_next_steps/umap --datasets Kumar Zhengmix4eq Zhengmix4uneq
+python Scripts/python/Clustering/make_gamma_figures.py results/gamma_next_steps
+```
+
+These were run with Python 3.12 (numpy 2, scanpy 1.12, leidenalg, umap-learn)
+rather than the 3.7 conda environment; the gamma-connectivity numbers match
+the original run to about three decimals.
+
+**Note on SimKumar:** the earlier `results/gamma_connectivity` tables report
+ARI near 0 for the three SimKumar datasets. With labels exported directly
+from the RDS files, all three give ARI 1.0 and kNN purity at or above 0.995,
+so the earlier H5AD conversion scrambled their labels.
+
+**Imbalance simulation (20 replicates):** with population A slightly denser
+than B and overlapping it, correction helps at 550:550 (fixed-K ARI
+0.72 -> 0.84, better in 20/20 replicates) and hurts at 100:1000 (0.63 -> 0.52,
+worse in 18/20, Wilcoxon p < 0.001; F1 of A 0.73 -> 0.65). This reproduces
+the Zhengmix4eq vs Zhengmix4uneq contrast. Figure 7b reads this run from
+`results/gamma_next_steps/simulations_imbalance`.
+
+**Note on Zhengmix8eq:** its resolution-1 ARI gain (0.507 -> 0.567) comes
+from the cluster count moving from 6 toward the true 8 (6.0 -> 6.6). With the
+resolution tuned to K = 8 the ARI is flat (0.580 -> 0.573), and its hardest
+population (CD4 helper T, F1 0.25) does not improve. Correction did not
+meaningfully help Zhengmix8eq.
