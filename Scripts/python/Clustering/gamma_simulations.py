@@ -21,12 +21,13 @@ gradient  One population with a dense core and a sparse halo around the same
 
 Usage
 -----
-python gamma_simulations.py <out_dir> [--replicates 3]
+python gamma_simulations.py <out_dir> [--replicates 3] [--scenarios ...] [--jobs 1]
 """
 
 import argparse
 import itertools
 import os
+from multiprocessing import Pool
 import sys
 from pathlib import Path
 
@@ -247,6 +248,18 @@ def gradient_scenario(replicates):
         yield X, labels, meta, compartment
 
 
+def _run(task):
+    X, labels, meta, compartment = task
+    print(meta["scenario"], meta["config"], "rep", meta["replicate"], flush=True)
+    return run_configuration(
+        X,
+        labels,
+        meta,
+        with_events=meta["replicate"] == 0,
+        compartment=compartment,
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("out_dir", type=Path)
@@ -254,27 +267,29 @@ def main():
     parser.add_argument(
         "--scenarios", nargs="+", default=["pair", "imbalance", "gradient"]
     )
+    parser.add_argument("--jobs", type=int, default=1)
     args = parser.parse_args()
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
-    collected = {}
     generators = {
         "pair": pair_scenario,
         "imbalance": imbalance_scenario,
         "gradient": gradient_scenario,
     }
-    for generator in (generators[name] for name in args.scenarios):
-        for X, labels, meta, compartment in generator(args.replicates):
-            print(meta["scenario"], meta["config"], "rep", meta["replicate"], flush=True)
-            result = run_configuration(
-                X,
-                labels,
-                meta,
-                with_events=meta["replicate"] == 0,
-                compartment=compartment,
-            )
-            for key, table in result.items():
-                collected.setdefault(key, []).append(table)
+    tasks = [
+        task
+        for name in args.scenarios
+        for task in generators[name](args.replicates)
+    ]
+    if args.jobs > 1:
+        with Pool(args.jobs) as pool:
+            results = pool.map(_run, tasks, chunksize=1)
+    else:
+        results = [_run(task) for task in tasks]
+    collected = {}
+    for result in results:
+        for key, table in result.items():
+            collected.setdefault(key, []).append(table)
     for key, tables in collected.items():
         pd.concat(tables, ignore_index=True).to_csv(
             args.out_dir / "sim_{}.csv".format(key), index=False

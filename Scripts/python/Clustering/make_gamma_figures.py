@@ -284,6 +284,11 @@ def fig_simulations(sims, out):
     _save(fig, out / "fig7_simulations_pair.png")
 
     imb = grid[grid["scenario"] == "imbalance"]
+    # Prefer the dedicated high-replicate imbalance run when it exists.
+    imb_path = sims.parent / "simulations_imbalance" / "sim_grid.csv"
+    if imb_path.exists():
+        imb = pd.read_csv(imb_path)
+    n_imb = imb["replicate"].nunique()
     fig, axes = plt.subplots(1, 3, figsize=(11, 3.3))
     for i, (cfg, g) in enumerate(imb.groupby("config", sort=False)):
         m = g.groupby("gamma")[["purity_A", "f1_A", "ari_fixed_k"]].agg(["mean", "std"])
@@ -298,7 +303,7 @@ def fig_simulations(sims, out):
     for ax in axes:
         ax.set_xlabel("γ")
     axes[2].legend(loc="lower left")
-    fig.suptitle("A slightly denser than B and overlapping it: balanced vs 1:10 (mean ± sd, 3 replicates)", x=0.01, ha="left", fontsize=11, fontweight="bold", color=INK, y=1.05)
+    fig.suptitle("A slightly denser than B and overlapping it: balanced vs 1:10 (mean ± sd, {} replicates)".format(n_imb), x=0.01, ha="left", fontsize=11, fontweight="bold", color=INK, y=1.05)
     fig.tight_layout()
     _save(fig, out / "fig7b_simulations_imbalance.png")
 

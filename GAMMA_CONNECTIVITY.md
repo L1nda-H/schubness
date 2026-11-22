@@ -98,6 +98,8 @@ python Scripts/python/Clustering/run_h5ad_gamma_experiment.py \
 python Scripts/python/Clustering/run_gamma_next_steps.py \
   results/gamma_next_steps/experiment results/gamma_next_steps/real
 python Scripts/python/Clustering/gamma_simulations.py results/gamma_next_steps/simulations
+python Scripts/python/Clustering/gamma_simulations.py results/gamma_next_steps/simulations_imbalance \
+  --scenarios imbalance --replicates 20 --jobs 7
 python Scripts/python/Clustering/gamma_umap_cpu.py results/gamma_next_steps/experiment \
   results/gamma_next_steps/umap --datasets Kumar Zhengmix4eq Zhengmix4uneq
 python Scripts/python/Clustering/make_gamma_figures.py results/gamma_next_steps
@@ -111,3 +113,16 @@ the original run to about three decimals.
 ARI near 0 for the three SimKumar datasets. With labels exported directly
 from the RDS files, all three give ARI 1.0 and kNN purity at or above 0.995,
 so the earlier H5AD conversion scrambled their labels.
+
+**Imbalance simulation (20 replicates):** with population A slightly denser
+than B and overlapping it, correction helps at 550:550 (fixed-K ARI
+0.72 -> 0.84, better in 20/20 replicates) and hurts at 100:1000 (0.63 -> 0.52,
+worse in 18/20, Wilcoxon p < 0.001; F1 of A 0.73 -> 0.65). This reproduces
+the Zhengmix4eq vs Zhengmix4uneq contrast. Figure 7b reads this run from
+`results/gamma_next_steps/simulations_imbalance`.
+
+**Note on Zhengmix8eq:** its resolution-1 ARI gain (0.507 -> 0.567) comes
+from the cluster count moving from 6 toward the true 8 (6.0 -> 6.6). With the
+resolution tuned to K = 8 the ARI is flat (0.580 -> 0.573), and its hardest
+population (CD4 helper T, F1 0.25) does not improve. Correction did not
+meaningfully help Zhengmix8eq.
